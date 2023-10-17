@@ -1,6 +1,7 @@
 package de.rusticprism.kreiscraftbot.music;
 
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import com.sedmelluq.discord.lavaplayer.track.playback.AudioFrame;
 import net.dv8tion.jda.api.audio.AudioSendHandler;
 import net.dv8tion.jda.api.entities.channel.Channel;
@@ -30,6 +31,9 @@ public class AudioHandler implements AudioSendHandler {
             queue.add(qtrack);
         }
     }
+    public void skipTrack() {
+        player.startTrack(queue.pull().getTrack(), false);
+    }
     @Override
     public boolean canProvide() {
         lastframe = player.provide();
@@ -45,5 +49,9 @@ public class AudioHandler implements AudioSendHandler {
     @Override
     public boolean isOpus() {
         return AudioSendHandler.super.isOpus();
+    }
+
+    public Queue getQueue() {
+        return queue;
     }
 }

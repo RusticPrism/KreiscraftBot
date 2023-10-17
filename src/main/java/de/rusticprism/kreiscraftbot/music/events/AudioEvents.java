@@ -11,7 +11,9 @@ import de.rusticprism.kreiscraftbot.music.Queue;
 import de.rusticprism.kreiscraftbot.music.QueuedTrack;
 import de.rusticprism.kreiscraftbot.music.RequestMetaData;
 import de.rusticprism.kreiscraftbot.utils.EmbedUtil;
+import de.rusticprism.kreiscraftbot.utils.FormatUtil;
 import de.rusticprism.kreiscraftbot.utils.RepeatMode;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 
@@ -20,7 +22,7 @@ import java.awt.*;
 public class AudioEvents extends AudioEventAdapter {
     private TextChannel channel;
     private final Queue queue;
-    private AudioPlayerManager manager;
+    private final AudioPlayerManager manager;
     private final AudioPlayer audioPlayer;
     private final Guild guild;
     public AudioEvents(AudioPlayerManager manager, Guild guild, AudioPlayer player) {
@@ -31,7 +33,11 @@ public class AudioEvents extends AudioEventAdapter {
     }
     @Override
     public void onTrackStart(AudioPlayer player, AudioTrack track) {
-        super.onTrackStart(player, track);
+        EmbedBuilder builder = new EmbedUtil("[" + FormatUtil.shorten(track.getInfo().title,20) + "](" +track.getInfo().uri + ")`" + FormatUtil.formatTime(track.getDuration()) + "`" , Color.RED).getBuilder();
+        builder.setAuthor("**Now Playing**", "", KreiscraftBot.getJda().getSelfUser().getAvatarUrl());
+        builder.setThumbnail(track.getInfo().artworkUrl);
+        //TODO BetterButtonAPI
+        channel.sendMessageEmbeds(builder.build()).addActionRow();
     }
 
     @Override
