@@ -6,6 +6,7 @@ import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
+import de.donkaos.systensor.Sys;
 import de.rusticprism.kreiscraftbot.KreiscraftBot;
 import de.rusticprism.kreiscraftbot.music.Queue;
 import de.rusticprism.kreiscraftbot.music.QueuedTrack;
@@ -16,6 +17,9 @@ import de.rusticprism.kreiscraftbot.utils.RepeatMode;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
+import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.interactions.components.buttons.ButtonStyle;
 
 import java.awt.*;
 
@@ -34,10 +38,17 @@ public class AudioEvents extends AudioEventAdapter {
     @Override
     public void onTrackStart(AudioPlayer player, AudioTrack track) {
         EmbedBuilder builder = new EmbedUtil("[" + FormatUtil.shorten(track.getInfo().title,20) + "](" +track.getInfo().uri + ")`" + FormatUtil.formatTime(track.getDuration()) + "`" , Color.RED).getBuilder();
-        builder.setAuthor("**Now Playing**", "", KreiscraftBot.getJda().getSelfUser().getAvatarUrl());
+        builder.setTitle("**Now Playing**");
         builder.setThumbnail(track.getInfo().artworkUrl);
-        //TODO BetterButtonAPI
-        channel.sendMessageEmbeds(builder.build()).addActionRow();
+        Button pausebutton = KreiscraftBot.getBetterButtonApi().registerButton(Emoji.fromUnicode("U+23EF"), ButtonStyle.PRIMARY, dummy -> player.setPaused(!player.isPaused()));
+        Button stopbutton = KreiscraftBot.getBetterButtonApi().registerButton(Emoji.fromUnicode("U+23F9"), ButtonStyle.DANGER, dummy -> {
+            guild.getAudioManager().closeAudioConnection();
+            player.stopTrack();
+            queue.clear();
+        });
+        Button skipbutton = KreiscraftBot.getBetterButtonApi().registerButton(Emoji.fromUnicode("U+23ED"), ButtonStyle.PRIMARY, dummy -> KreiscraftBot.getPlayerManager().getAudioHandler(guild).skipTrack());
+        Button repeatbutton = KreiscraftBot.getBetterButtonApi().registerButton(Emoji.fromUnicode("U+1F501"), ButtonStyle.SUCCESS, dummy -> Sys.info("Repeating"));
+        KreiscraftBot.getPlayerManager().getAudioHandler(guild).getChannel().sendMessageEmbeds(builder.build()).addActionRow(pausebutton, stopbutton, skipbutton, repeatbutton).queue();
     }
 
     @Override

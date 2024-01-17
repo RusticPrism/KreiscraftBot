@@ -1,5 +1,6 @@
 package de.rusticprism.kreiscraftbot;
 
+import de.donkaos.systensor.Sys;
 import de.rusticprism.kreiscraftbot.commands.api.Aliases;
 import de.rusticprism.kreiscraftbot.commands.api.BotCommand;
 import de.rusticprism.kreiscraftbot.commands.api.CommandInfo;
@@ -27,9 +28,9 @@ public class CommandManager {
     }
 
     public boolean performCommand(SlashCommandInteraction interaction) {
-        System.out.println(interaction.getCommandString());
-        if(commands.containsKey(interaction.getFullCommandName())) {
-            BotCommand command = commands.get(interaction.getFullCommandName());
+        String splitcommand = interaction.getCommandString().split(" ")[0].replace("/", "");
+        if(commands.containsKey(splitcommand)) {
+            BotCommand command = commands.get(splitcommand);
             if(interaction.getCommandString().split(" ").length == 1) {
                 command.execute(interaction.getMember(), interaction.getChannel().asTextChannel(), interaction);
                 return true;
@@ -40,30 +41,29 @@ public class CommandManager {
                     String strcommand = interaction.getCommandString();
                     strcommand = strcommand.replace(subCommandUtil.subCommand().command() + ": ", "");
                     strcommand = strcommand.replace("/" + interaction.getFullCommandName() + " ", "");
-                    System.out.println(subCommandUtil.method().getName());
-                    try {
-                        subCommandUtil.method().invoke(command, strcommand.split(" "), interaction);
+                    try {subCommandUtil.method().invoke(command, strcommand.split(" "), interaction);
                     } catch (IllegalAccessException | InvocationTargetException e) {
-                        KreiscraftBot.getLogger().error("Error invoking Subcommand Method", e.getCause());
+                        Sys.error("Error invoking Subcommand Method", e.getCause().getLocalizedMessage());
                     }
                 });
             }
         }
-        return true;
+        return false;
     }
     public void registerCommand(Guild guild) {
-        List<CommandCreateAction> commandCreateActions = new ArrayList<>();
         Reflections reflections = new Reflections("de.rusticprism.kreiscraftbot.commands");
-        reflections.getTypesAnnotatedWith(CommandInfo.class).forEach(clazz -> {
+        for(Class<?> clazz : reflections.getTypesAnnotatedWith(CommandInfo.class)) {
+            List<CommandCreateAction> commandCreateActions = new ArrayList<>();
+            List<SubCommandUtil> sub = new ArrayList<>();
             BotCommand command;
             try {
                 command = (BotCommand) clazz.getDeclaredConstructor().newInstance();
             } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-                KreiscraftBot.getLogger().error("Error instantiating Class!", e.getCause());
+                Sys.error("Error instantiating Class!", e.getCause().getLocalizedMessage());
                 return;
             }
             if (command.getClass().getAnnotation(CommandInfo.class) == null) {
-                KreiscraftBot.getLogger().error("Couldn't find CommandInfo Annotation");
+                Sys.error("Couldn't find CommandInfo Annotation");
                 return;
             }
             if (command.getClass().getAnnotation(Aliases.class) != null) {
@@ -74,13 +74,12 @@ public class CommandManager {
             }
             commands.put(command.getClass().getAnnotation(CommandInfo.class).command(), command);
             commandCreateActions.add(guild.upsertCommand(command.getClass().getAnnotation(CommandInfo.class).command(), command.getClass().getAnnotation(CommandInfo.class).description()));
-            List<SubCommandUtil> sub = new ArrayList<>();
             for(Method method : clazz.getMethods()) {
                 if(method.getAnnotation(SubCommand.class) == null) {
                     continue;
                 }
                 if (method.getParameterCount() != 2) {
-                    KreiscraftBot.getLogger().error("To few/many Parameters provided on Method: " + method.getName());
+                    Sys.error("To few/many Parameters provided on Method: " + method.getName());
                     return;
                 }
                 if (Arrays.stream(method.getParameterTypes()).toList().contains(String[].class) && Arrays.stream(method.getParameterTypes()).toList().contains(SlashCommandInteraction.class)) {
@@ -89,12 +88,20 @@ public class CommandManager {
                     for (CommandCreateAction commandCreateAction : commandCreateActions) {
                         commandCreateAction.addOption(OptionType.STRING, subCommand.command(), subCommand.description());
                     }
-                } else KreiscraftBot.getLogger().error("Wrong Parameters provided on Method: " + method.getName());
+                } else Sys.error("Wrong Parameters provided on Method: " + method.getName());
             }
             for (CommandCreateAction commandCreateAction : commandCreateActions) {
                 commandCreateAction.queue();
             }
             subcommands.put(command, sub);
-        });
+        }
+    }
+
+    public HashMap<String, BotCommand> getCommands() {
+        return commands;
+    }
+
+    public HashMap<BotCommand, List<SubCommandUtil>> getSubcommands() {
+        return subcommands;
     }
 }

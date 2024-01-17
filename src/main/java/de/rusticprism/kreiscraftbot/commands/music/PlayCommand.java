@@ -1,10 +1,10 @@
 package de.rusticprism.kreiscraftbot.commands.music;
 
+import de.donkaos.systensor.Sys;
 import de.rusticprism.kreiscraftbot.KreiscraftBot;
 import de.rusticprism.kreiscraftbot.commands.api.BotCommand;
 import de.rusticprism.kreiscraftbot.commands.api.CommandInfo;
 import de.rusticprism.kreiscraftbot.commands.api.SubCommand;
-import de.rusticprism.kreiscraftbot.music.AudioHandler;
 import de.rusticprism.kreiscraftbot.music.events.ResultHandler;
 import de.rusticprism.kreiscraftbot.utils.EmbedUtil;
 import de.rusticprism.kreiscraftbot.utils.FormatUtil;
@@ -30,8 +30,9 @@ public class PlayCommand extends BotCommand {
             }else url = "ytsearch: " + url;
         }else {
             StringBuilder stringBuilder = new StringBuilder();
-            for (int i = 1; i < args.length; i++) stringBuilder.append(args[i]).append(" ");
+            for (int i = 0; i < args.length; i++) stringBuilder.append(args[i]).append(" ");
             url = "ytsearch: " + stringBuilder.toString().trim();
+            Sys.debug(url);
         }
         KreiscraftBot.getPlayerManager().loadItemOrdered(interaction.getGuild(),url, new ResultHandler(interaction));
     }

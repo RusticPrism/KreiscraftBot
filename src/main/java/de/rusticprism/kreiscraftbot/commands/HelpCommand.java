@@ -16,7 +16,6 @@ public class HelpCommand extends BotCommand {
 
     @Override
     public void execute(Member member, TextChannel channel, SlashCommandInteraction interaction) {
-        System.out.println("Test");
         interaction.reply("Test").queue();
     }
 

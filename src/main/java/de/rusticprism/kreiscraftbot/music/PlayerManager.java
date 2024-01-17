@@ -14,17 +14,27 @@ public class PlayerManager extends DefaultAudioPlayerManager {
         AudioSourceManagers.registerLocalSource(this);
         source(YoutubeAudioSourceManager.class).setPlaylistPageCount(10);
         for (Guild guild : KreiscraftBot.getJda().getGuilds()) {
-            guild.getAudioManager().setSelfDeafened(true);
-            AudioPlayer player = createPlayer();
-            player.setVolume(100);
-            AudioHandler handler = new AudioHandler(player);
-            player.addListener(new AudioEvents(this, guild, player));
-            guild.getAudioManager().setSendingHandler(handler);
+            createPlayer(guild);
         }
+    }
+    public AudioHandler getAudioHandler(Guild guild) {
+        if(guild.getAudioManager().getSendingHandler() instanceof AudioHandler) {
+            return (AudioHandler) guild.getAudioManager().getSendingHandler();
+        }else return new AudioHandler(createPlayer(guild));
     }
     public AudioPlayer getAudioPlayer(Guild guild) {
         if(guild.getAudioManager().getSendingHandler() instanceof AudioHandler) {
-            return (AudioPlayer) guild.getAudioManager().getSendingHandler();
-        }else return createPlayer();
+            return ((AudioHandler) guild.getAudioManager().getSendingHandler()).getPlayer();
+        }else return createPlayer(guild);
+    }
+
+    public AudioPlayer createPlayer(Guild guild) {
+        guild.getAudioManager().setSelfDeafened(true);
+        AudioPlayer player = super.createPlayer();
+        player.addListener(new AudioEvents(this, guild, player));
+        player.setVolume(100);
+        AudioHandler audioHandler = new AudioHandler(player);
+        guild.getAudioManager().setSendingHandler(audioHandler);
+        return player;
     }
 }

@@ -1,5 +1,7 @@
 package de.rusticprism.kreiscraftbot;
 
+import de.donkaos.systensor.Sys;
+import de.rusticprism.bba.BetterButtonApi;
 import de.rusticprism.kreiscraftbot.listener.ReadyListener;
 import de.rusticprism.kreiscraftbot.listener.SlashCommandListener;
 import de.rusticprism.kreiscraftbot.music.PlayerManager;
@@ -10,21 +12,20 @@ import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class KreiscraftBot {
-    private static Logger logger = null;
     private static JDA jda;
     private static CommandManager commandManager;
     private static ScheduledExecutorService threadpool;
     private static PlayerManager playerManager;
+    private static BetterButtonApi betterButtonApi;
 
     public KreiscraftBot(String token) {
-        logger = LoggerFactory.getLogger("KreiscraftBot");
+        Sys.setPrefix("KREISCRAFTBOT");
+        Sys.setDebugging(false);
         commandManager = new CommandManager();
         threadpool = Executors.newSingleThreadScheduledExecutor();
         playerManager = new PlayerManager();
@@ -37,15 +38,11 @@ public class KreiscraftBot {
                     .addEventListeners(new ReadyListener(), new SlashCommandListener())
                     .setBulkDeleteSplittingEnabled(false)
                     .build();
-
+            betterButtonApi = new BetterButtonApi(jda);
         } catch (IllegalArgumentException ex) {
-            logger.error("Error while logging in!", ex.getCause());
+            Sys.error("Error while logging in!", ex.getCause().getLocalizedMessage());
             System.exit(1);
         }
-    }
-
-    public static Logger getLogger() {
-        return logger;
     }
 
     public static JDA getJda() {
@@ -64,5 +61,9 @@ public class KreiscraftBot {
     }
     public static PlayerManager getPlayerManager() {
         return playerManager;
+    }
+
+    public static BetterButtonApi getBetterButtonApi() {
+        return betterButtonApi;
     }
 }

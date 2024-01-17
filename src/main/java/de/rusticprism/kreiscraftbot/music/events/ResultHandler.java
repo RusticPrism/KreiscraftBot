@@ -4,14 +4,16 @@ import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import de.donkaos.systensor.Sys;
+import de.rusticprism.kreiscraftbot.KreiscraftBot;
 import de.rusticprism.kreiscraftbot.music.AudioHandler;
 import de.rusticprism.kreiscraftbot.music.QueuedTrack;
 import de.rusticprism.kreiscraftbot.utils.EmbedUtil;
 import de.rusticprism.kreiscraftbot.utils.FormatUtil;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.interactions.commands.SlashCommandInteraction;
-import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.util.Arrays;
@@ -21,9 +23,15 @@ public class ResultHandler implements AudioLoadResultHandler {
     public ResultHandler(SlashCommandInteraction interaction) {
         this.interaction = interaction;
     }
+    public void sendSingleMessage(AudioTrack track, User user) {
+        EmbedBuilder builder = new EmbedUtil("[" + FormatUtil.shorten(track.getInfo().title, 30) + "]" + "(" + track.getInfo().uri + ")", Color.GREEN).getBuilder();
+        builder.setAuthor("Song Added to Queue #1", user.getAvatarUrl(), user.getAvatarUrl());
+        interaction.replyEmbeds(builder.build()).queue();
+    }
     @Override
     public void trackLoaded(AudioTrack track) {
-        AudioHandler handler = (AudioHandler) interaction.getGuild().getAudioManager().getSendingHandler();
+        Sys.debug(track.getInfo().title);
+        AudioHandler handler = KreiscraftBot.getPlayerManager().getAudioHandler(interaction.getGuild());
         Member user = interaction.getMember();
 
         //Join VoiceChannel of Member
@@ -36,16 +44,19 @@ public class ResultHandler implements AudioLoadResultHandler {
             return;
         }
         interaction.getGuild().getAudioManager().openAudioConnection(user.getVoiceState().getChannel());
-        //Add Track
-        EmbedBuilder builder = new EmbedUtil("[" + FormatUtil.shorten(track.getInfo().title, 20) + "]" + "(" + track.getInfo().uri + ")", Color.GREEN).getBuilder();
-        builder.setAuthor("**| Song Added to Queue #1", "", user.getAvatarUrl());
-        interaction.replyEmbeds(builder.build()).queue();
-        handler.addTrack(new QueuedTrack(track, user.getUser()), interaction.getChannel());
+        sendSingleMessage(track, user.getUser());
+        assert handler != null;
+        handler.addTrack(new QueuedTrack(track, user.getUser()), interaction.getChannel().asTextChannel());
     }
 
     @Override
     public void playlistLoaded(AudioPlaylist playlist) {
-
+        Sys.debug(playlist.getTracks().stream().map(track -> track.getInfo().title).toList().toString());
+        if(playlist.getTracks().size() == 1 || playlist.isSearchResult()) {
+            interaction.getGuild().getAudioManager().openAudioConnection(interaction.getMember().getVoiceState().getChannel());
+            sendSingleMessage(playlist.getTracks().get(0), interaction.getUser());
+            KreiscraftBot.getPlayerManager().getAudioHandler(interaction.getGuild()).addTrack(new QueuedTrack(playlist.getTracks().get(0), interaction.getUser()), interaction.getChannel().asTextChannel());
+        }
     }
 
     @Override
@@ -60,6 +71,6 @@ public class ResultHandler implements AudioLoadResultHandler {
             case SUSPICIOUS -> interaction.replyEmbeds(new EmbedUtil("An **SUSPICIOUS** Error occurred while trying to load that Song", Arrays.toString(exception.getCause().getStackTrace()),Color.RED).getBuilder().build()).queue();
             case FAULT -> interaction.replyEmbeds(new EmbedUtil("An **FAULT** Error occurred while trying to load that Song", Arrays.toString(exception.getCause().getStackTrace()),Color.RED).getBuilder().build()).queue();
         }
-        LoggerFactory.getLogger("KreiscraftBot").error(exception.getMessage(),exception.getCause());
+        Sys.error(exception.getMessage(), exception.getCause().getLocalizedMessage());
     }
 }
